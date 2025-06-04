@@ -354,6 +354,26 @@ createOrReplace
 
 				annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+			column UnitPrice
+				dataType: double
+				lineageTag: f1223e0a-64d2-4b2d-8910-1016dcf42619
+				summarizeBy: sum
+				sourceColumn: UnitPrice
+
+				annotation SummarizationSetBy = Automatic
+
+				annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+			column LinePriceLCY
+				dataType: double
+				lineageTag: 66167f38-6a81-46f6-8403-4755cd4e2cdb
+				summarizeBy: sum
+				sourceColumn: LinePriceLCY
+
+				annotation SummarizationSetBy = Automatic
+
+				annotation PBI_FormatHint = {"isGeneralNumber":true}
+
 			partition 'gold v_bc_posted_sales_invoices' = m
 				mode: import
 				source =
@@ -449,10 +469,11 @@ createOrReplace
 						let
 						    Źródło = PostgreSQL.Database("10.0.13.24", "dwh"),
 						    gold_v_bc_salesperson = Źródło{[Schema="gold",Item="v_bc_salesperson"]}[Data],
-						    #"Wstawiony tekst przed ogranicznikiem" = Table.AddColumn(gold_v_bc_salesperson, "SalespersonName", each Text.BeforeDelimiter([Email], "@"), type text),
-						    #"Zamieniono wartość" = Table.ReplaceValue(#"Wstawiony tekst przed ogranicznikiem","p.lachmanski@zymetric.pl","r.fijalkowski@hvacbp.pl",Replacer.ReplaceText,{"Email"})
+						    #"Zamieniono wartość" = Table.ReplaceValue(gold_v_bc_salesperson,"p.lachmanski@zymetric.pl","l.wojcik@zymetric.pl",Replacer.ReplaceText,{"Email"}),
+						    #"Zamieniono wartość1" = Table.ReplaceValue(#"Zamieniono wartość","k.saltrukowicz@nabilaton.pl","r.fijalkowski@hvacbc.pl",Replacer.ReplaceText,{"Email"}),
+						    #"Wstawiony tekst przed ogranicznikiem" = Table.AddColumn(#"Zamieniono wartość1", "SalespersonName", each Text.BeforeDelimiter([Email], "@"), type text)
 						in
-						    #"Zamieniono wartość"
+						    #"Wstawiony tekst przed ogranicznikiem"
 
 			annotation PBI_NavigationStepName = Nawigacja
 
@@ -848,6 +869,16 @@ createOrReplace
 				formatString: 0
 				displayFolder: Sales
 				lineageTag: e5f9901d-13fd-4bb4-b506-05058343a4ac
+
+			measure AverageDiscount =
+					
+					DIVIDE(
+					    SUM('gold v_bc_posted_sales_invoices'[LineDiscountAmount]),
+					    sum('gold v_bc_posted_sales_invoices'[LinePriceLCY])
+					)
+				formatString: 0.00%;-0.00%;0.00%
+				displayFolder: Sales
+				lineageTag: 141d42d5-af76-47fc-98e3-ff415f40e750
 
 			column Value
 				isHidden
@@ -1563,6 +1594,7 @@ createOrReplace
 			annotation PBI_ResultType = Table
 
 		relationship b61403a9-844e-a204-da10-d11a2c749d3a
+			crossFilteringBehavior: bothDirections
 			toCardinality: many
 			fromColumn: 'gold v_bc_posted_sales_invoices'.Salesperson
 			toColumn: 'gold v_bc_salesperson'.Code
